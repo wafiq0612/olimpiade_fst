@@ -1,9 +1,20 @@
+﻿// ============================================================
+// HELPER FETCH JSON AMAN
+// ============================================================
+function fetchJSON(url, options) {
+  return fetch(url, options)
+    .then(res => res.text().then(t => {
+      try { return JSON.parse(t); }
+      catch(e) { throw new Error('Server error: ' + (t || 'empty response')); }
+    }));
+}
+
 // ============================================================
 // STATE
 // ============================================================
 const state = {
-  currentUser: null, // { nama, email, pass, sekolah, hp, alamat, profilLengkap, bayarUploaded, status }
-  accounts: [],      // daftar akun yang sudah registrasi
+  currentUser: null,
+  accounts: [],
   pesertaList: [],
   selectedPeserta: null
 };
@@ -41,12 +52,11 @@ function doRegister() {
   if (pass !== pass2) { alert('Password tidak cocok!'); return; }
   if (pass.length < 6) { alert('Password minimal 6 karakter!'); return; }
 
-  fetch('api/register.php', {
+  fetchJSON('api/register.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nama, email, password: pass })
   })
-  .then(res => res.json())
   .then(result => {
     if (!result.success) { alert(result.message); return; }
 
@@ -69,27 +79,26 @@ function doLogin() {
   const pass  = document.getElementById('login-pass').value;
   if (!email || !pass) { alert('Email dan password harus diisi!'); return; }
 
-  fetch('api/login.php', {
+  fetchJSON('api/login.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password: pass })
   })
-  .then(res => res.json())
   .then(result => {
     if (!result.success) { alert(result.message); return; }
 
-state.currentUser = {
-  nama: result.data.nama,
-  email: result.data.email,
-  sekolah: result.data.sekolah || '',
-  hp: result.data.nomor_hp || '',
-  alamat: result.data.alamat || '',
-  bidang: result.data.bidang || '',
-  profilLengkap: result.data.profil_lengkap == 1,
-  bayarUploaded: !!result.data.bayar_file,
-  status: result.data.status,
-  bayarFile: result.data.bayar_file || null
-};
+    state.currentUser = {
+      nama: result.data.nama,
+      email: result.data.email,
+      sekolah: result.data.sekolah || '',
+      hp: result.data.nomor_hp || '',
+      alamat: result.data.alamat || '',
+      bidang: result.data.bidang || '',
+      profilLengkap: result.data.profil_lengkap == 1,
+      bayarUploaded: !!result.data.bayar_file,
+      status: result.data.status,
+      bayarFile: result.data.bayar_file || null
+    };
 
     loadDashboard();
     showPage('page-dashboard');
@@ -97,10 +106,12 @@ state.currentUser = {
   })
   .catch(err => alert('Terjadi kesalahan: ' + err));
 }
+
 function doLogout() {
   state.currentUser = null;
   showPage('page-landing');
 }
+
 // ============================================================
 // DASHBOARD
 // ============================================================
@@ -108,7 +119,6 @@ function loadDashboard() {
   const u = state.currentUser;
   document.getElementById('sidebar-name').textContent = u.nama;
   document.getElementById('wc-name').textContent = u.nama;
-  // Pre-fill profil
   document.getElementById('p-nama').value = u.nama;
   document.getElementById('p-sekolah').value = u.sekolah;
   document.getElementById('p-hp').value = u.hp;
@@ -124,11 +134,9 @@ function updateDashState() {
   const progressPct = document.getElementById('progress-pct');
   const dashInfo = document.getElementById('dash-info');
 
-  // Reset inline style supaya tidak menumpuk dari kondisi status sebelumnya
   statusBadge.removeAttribute('style');
   dashInfo.removeAttribute('style');
 
-  // Checklist items
   const ciProfil = document.getElementById('ci-profil');
   const ccProfil = document.getElementById('cc-profil');
   const ciProfilDesc = document.getElementById('ci-profil-desc');
@@ -139,7 +147,6 @@ function updateDashState() {
   const ciBayarBtn = document.getElementById('ci-bayar-btn');
 
   if (!u.profilLengkap && !u.bayarUploaded) {
-    // 0%
     progressFill.style.width = '0%';
     progressPct.textContent = '0%';
     statusBadge.className = 'badge badge-orange';
@@ -159,7 +166,6 @@ function updateDashState() {
     dashInfo.className = 'alert alert-orange';
     dashInfo.textContent = 'Silakan lengkapi data profil Anda untuk melanjutkan proses pendaftaran.';
   } else if (u.profilLengkap && !u.bayarUploaded) {
-    // 50%
     progressFill.style.width = '50%';
     progressPct.textContent = '50%';
     statusBadge.className = 'badge badge-blue';
@@ -167,7 +173,7 @@ function updateDashState() {
     ciProfil.classList.add('done-item');
     ciProfil.style.borderColor = '#BBF7D0';
     ccProfil.className = 'check-circle checked';
-    ccProfil.textContent = '✓';
+    ccProfil.textContent = 'âœ“';
     ciProfilDesc.textContent = 'Profil lengkap telah diisi';
     ciProfilBtn.classList.add('hidden');
     ciBayar.classList.remove('done-item');
@@ -179,7 +185,6 @@ function updateDashState() {
     dashInfo.className = 'alert alert-orange';
     dashInfo.textContent = 'Silakan upload bukti pembayaran untuk menyelesaikan pendaftaran.';
   } else if (u.profilLengkap && u.bayarUploaded && u.status === 'diterima') {
-    // 100% - DITERIMA
     progressFill.style.width = '100%';
     progressPct.textContent = '100%';
     statusBadge.className = 'badge badge-green';
@@ -187,13 +192,13 @@ function updateDashState() {
     ciProfil.classList.add('done-item');
     ciProfil.style.borderColor = '#BBF7D0';
     ccProfil.className = 'check-circle checked';
-    ccProfil.textContent = '✓';
+    ccProfil.textContent = 'âœ“';
     ciProfilDesc.textContent = 'Profil lengkap telah diisi';
     ciProfilBtn.classList.add('hidden');
     ciBayar.classList.add('done-item');
     ciBayar.style.borderColor = '#BBF7D0';
     ccBayar.className = 'check-circle checked';
-    ccBayar.textContent = '✓';
+    ccBayar.textContent = 'âœ“';
     ciBayarDesc.textContent = 'Bukti pembayaran telah diupload';
     ciBayarBtn.classList.add('hidden');
     dashInfo.className = 'alert alert-blue';
@@ -201,7 +206,6 @@ function updateDashState() {
     dashInfo.style.color = '#166534';
     dashInfo.innerHTML = 'Selamat! Pendaftaran Anda telah diterima. Silakan hubungi <a href="https://wa.me/62811123456" target="_blank" style="font-weight:600;text-decoration:underline;">Admin Panitia (+62 811 123 456)</a> untuk konfirmasi kehadiran dan informasi teknis pelaksanaan. Sampai jumpa di kompetisi!';
   } else if (u.profilLengkap && u.bayarUploaded && u.status === 'ditolak') {
-    // 100% - DITOLAK
     progressFill.style.width = '100%';
     progressPct.textContent = '100%';
     statusBadge.className = 'badge';
@@ -211,21 +215,20 @@ function updateDashState() {
     ciProfil.classList.add('done-item');
     ciProfil.style.borderColor = '#BBF7D0';
     ccProfil.className = 'check-circle checked';
-    ccProfil.textContent = '✓';
+    ccProfil.textContent = 'âœ“';
     ciProfilDesc.textContent = 'Profil lengkap telah diisi';
     ciProfilBtn.classList.add('hidden');
     ciBayar.classList.add('done-item');
     ciBayar.style.borderColor = '#BBF7D0';
     ccBayar.className = 'check-circle checked';
-    ccBayar.textContent = '✓';
+    ccBayar.textContent = 'âœ“';
     ciBayarDesc.textContent = 'Bukti pembayaran telah diupload';
     ciBayarBtn.classList.add('hidden');
     dashInfo.className = 'alert';
     dashInfo.style.background = '#FEF2F2';
     dashInfo.style.color = 'var(--red)';
-    dashInfo.innerHTML = 'Mohon maaf, pendaftaran Anda belum dapat kami terima pada periode ini. Jangan berkecil hati — silakan hubungi <a href="https://wa.me/62811123456" target="_blank" style="font-weight:600;text-decoration:underline;">Admin Panitia (+62 811 123 456)</a> jika ada pertanyaan, dan tetap semangat untuk kesempatan berikutnya!';
+    dashInfo.innerHTML = 'Mohon maaf, pendaftaran Anda belum dapat kami terima pada periode ini. Jangan berkecil hati â€” silakan hubungi <a href="https://wa.me/62811123456" target="_blank" style="font-weight:600;text-decoration:underline;">Admin Panitia (+62 811 123 456)</a> jika ada pertanyaan, dan tetap semangat untuk kesempatan berikutnya!';
   } else if (u.profilLengkap && u.bayarUploaded) {
-    // 100% - MENUNGGU
     progressFill.style.width = '100%';
     progressPct.textContent = '100%';
     statusBadge.className = 'badge badge-yellow';
@@ -233,13 +236,13 @@ function updateDashState() {
     ciProfil.classList.add('done-item');
     ciProfil.style.borderColor = '#BBF7D0';
     ccProfil.className = 'check-circle checked';
-    ccProfil.textContent = '✓';
+    ccProfil.textContent = 'âœ“';
     ciProfilDesc.textContent = 'Profil lengkap telah diisi';
     ciProfilBtn.classList.add('hidden');
     ciBayar.classList.add('done-item');
     ciBayar.style.borderColor = '#BBF7D0';
     ccBayar.className = 'check-circle checked';
-    ccBayar.textContent = '✓';
+    ccBayar.textContent = 'âœ“';
     ciBayarDesc.textContent = 'Bukti pembayaran telah diupload';
     ciBayarBtn.classList.add('hidden');
     dashInfo.className = 'alert alert-blue';
@@ -313,7 +316,7 @@ function saveProfil() {
   const bidang  = document.getElementById('p-bidang').value.trim();
   if (!nama || !sekolah || !hp || !alamat || !bidang) { alert('Semua field harus diisi!'); return; }
 
-  fetch('api/update_profil.php', {
+  fetchJSON('api/update_profil.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -321,7 +324,6 @@ function saveProfil() {
       nama, sekolah, nomor_hp: hp, alamat, bidang
     })
   })
-  .then(res => res.json())
   .then(result => {
     if (!result.success) { alert(result.message); return; }
 
@@ -375,9 +377,7 @@ function uploadBayar() {
   const fileInput = document.getElementById('file-input');
   const file = fileInput.files[0];
 
-  if (!file) {
-    alert('Harap pilih file bukti pembayaran!'); return;
-  }
+  if (!file) { alert('Harap pilih file bukti pembayaran!'); return; }
 
   const formData = new FormData();
   formData.append('email', state.currentUser.email);
@@ -387,7 +387,10 @@ function uploadBayar() {
     method: 'POST',
     body: formData
   })
-  .then(res => res.json())
+  .then(res => res.text().then(t => {
+    try { return JSON.parse(t); }
+    catch(e) { throw new Error('Server error: ' + (t || 'empty')); }
+  }))
   .then(result => {
     if (!result.success) { alert(result.message); return; }
 
@@ -401,6 +404,7 @@ function uploadBayar() {
   })
   .catch(() => alert('Gagal terhubung ke server.'));
 }
+
 // ============================================================
 // ADMIN LOGIN
 // ============================================================
@@ -409,12 +413,11 @@ function doAdminLogin() {
   const pass = document.getElementById('admin-pass').value;
   if (!user || !pass) { alert('Username dan password harus diisi!'); return; }
 
-  fetch('api/admin_login.php', {
+  fetchJSON('api/admin_login.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: user, password: pass })
   })
-  .then(res => res.json())
   .then(result => {
     if (!result.success) { alert(result.message); return; }
     showPage('page-admin-dashboard');
@@ -432,8 +435,7 @@ function doAdminLogout() {
 // ADMIN TABLE
 // ============================================================
 function fetchPesertaList() {
-  fetch('api/get_peserta.php')
-    .then(res => res.json())
+  fetchJSON('api/get_peserta.php')
     .then(result => {
       if (!result.success) { alert('Gagal memuat data peserta'); return; }
       state.pesertaList = result.data;
@@ -491,11 +493,11 @@ function buildAksiHtml(id, status) {
 }
 
 function updateStatusServer(id, status) {
-  return fetch('api/update_status.php', {
+  return fetchJSON('api/update_status.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, status })
-  }).then(res => res.json());
+  });
 }
 
 function quickApprove(id) {
@@ -516,12 +518,11 @@ function quickReject(id) {
 
 function deletePeserta(id) {
   if (!confirm('Hapus peserta ini?')) return;
-  fetch('api/delete_peserta.php', {
+  fetchJSON('api/delete_peserta.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id })
   })
-  .then(res => res.json())
   .then(result => {
     if (!result.success) { alert(result.message); return; }
     fetchPesertaList();
@@ -543,11 +544,9 @@ function viewDetail(id) {
   document.getElementById('d-hp').textContent = p.hp || '-';
   document.getElementById('d-alamat').textContent = p.alamat || '-';
 
-  // Status badge
   const sb = document.getElementById('detail-status-badge');
   sb.innerHTML = statusBadgeHtml(p.status);
 
-  // Bukti
   const bc = document.getElementById('bukti-container');
   if (p.bayarFile) {
     const ext = p.bayarFile.split('.').pop().toLowerCase();
@@ -569,7 +568,6 @@ function viewDetail(id) {
     bc.textContent = 'Belum ada bukti pembayaran diupload';
   }
 
-  // Verif section
   const verifSection = document.getElementById('verif-section');
   const approvedMsg = document.getElementById('approved-msg');
   const rejectedMsg = document.getElementById('rejected-msg');
@@ -623,7 +621,7 @@ function rejectParticipant() {
 }
 
 // ============================================================
-// IMAGE LIGHTBOX (perbesar gambar bukti pembayaran)
+// IMAGE LIGHTBOX
 // ============================================================
 function openImageLightbox(url) {
   let overlay = document.getElementById('img-lightbox-overlay');
