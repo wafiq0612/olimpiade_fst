@@ -24,21 +24,34 @@ if ($email === '' || $pass === '') {
 $stmt = $conn->prepare("SELECT id, nama, email, password, sekolah, nomor_hp, alamat, bidang, profil_lengkap, bayar_file, status FROM peserta WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
-$result = $stmt->get_result();
+$stmt->store_result();
 
-if ($result->num_rows === 0) {
+if ($stmt->num_rows === 0) {
     echo json_encode(['success' => false, 'message' => 'Email atau password salah']);
     exit;
 }
 
-$user = $result->fetch_assoc();
+$stmt->bind_result($id, $nama, $email_db, $password_db, $sekolah, $nomor_hp, $alamat, $bidang, $profil_lengkap, $bayar_file, $status);
+$stmt->fetch();
 
-if (md5($pass) !== $user['password']) {
+if (md5($pass) !== $password_db) {
     echo json_encode(['success' => false, 'message' => 'Email atau password salah']);
     exit;
 }
 
-unset($user['password']);
+$user = [
+    'id'             => $id,
+    'nama'           => $nama,
+    'email'          => $email_db,
+    'sekolah'        => $sekolah,
+    'nomor_hp'       => $nomor_hp,
+    'alamat'         => $alamat,
+    'bidang'         => $bidang,
+    'profil_lengkap' => $profil_lengkap,
+    'bayar_file'     => $bayar_file,
+    'status'         => $status
+];
+
 echo json_encode(['success' => true, 'data' => $user]);
 
 $stmt->close();
