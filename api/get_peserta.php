@@ -2,10 +2,10 @@
 header('Content-Type: application/json');
 require __DIR__ . '/koneksi.php';
 
-$result = $conn->query("SELECT id, nama, email, sekolah, nomor_hp, alamat, bidang, profil_lengkap, bayar_uploaded, bayar_file, status, created_at FROM peserta ORDER BY created_at DESC");
+$result = mysqli_query($conn, "SELECT id, nama, email, sekolah, nomor_hp, alamat, bidang, profil_lengkap, bayar_file, status FROM peserta ORDER BY id DESC");
 
 $list = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = mysqli_fetch_assoc($result)) {
     $list[] = [
         'id'            => (int)$row['id'],
         'nama'          => $row['nama'],
@@ -15,12 +15,11 @@ while ($row = $result->fetch_assoc()) {
         'alamat'        => $row['alamat'],
         'bidang'        => $row['bidang'],
         'profilLengkap' => (bool)$row['profil_lengkap'],
-        'bayarUploaded' => (bool)$row['bayar_uploaded'],
+        'bayarUploaded' => !empty($row['bayar_file']),
         'bayarFile'     => $row['bayar_file'],
         'status'        => $row['status'],
-        'createdAt'     => $row['created_at'],
     ];
 }
 
 echo json_encode(['success' => true, 'data' => $list]);
-$conn->close();
+mysqli_close($conn);

@@ -3,32 +3,33 @@ header('Content-Type: application/json');
 require __DIR__ . '/koneksi.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
-$username = trim($data['username'] ?? '');
-$password = $data['password'] ?? '';
+$id = $data['id'] ?? null;
 
-if ($username === '' || $password === '') {
-    echo json_encode(['success' => false, 'message' => 'Username dan password wajib diisi']);
+if (!$id) {
+    echo json_encode(['success' => false, 'message' => 'ID tidak valid']);
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, username, password FROM admin WHERE username = ?");
-$stmt->bind_param("s", $username);
+$stmt = $conn->prepare("SELECT bayar_file FROM peserta WHERE id = ?");
+$stmt->bind_param("i", $id);
 $stmt->execute();
-$result = $stmt->get_result();
+$stmt->store_result();
+$stmt->bind_result($bayar_file);
+$stmt->fetch();
+$stmt->close();
 
-if ($result->num_rows === 0) {
-    echo json_encode(['success' => false, 'message' => 'Username atau password salah']);
-    exit;
+$stmt = $conn->prepare("DELETE FROM peserta WHERE id = ?");
+$stmt->bind_param("i", $id);
+
+if ($stmt->execute()) {
+    if ($bayar_file) {
+        $filePath = __DIR__ . '/../uploads/' . $bayar_file;
+        if (file_exists($filePath)) unlink($filePath);
+    }
+    echo json_encode(['success' => true, 'message' => 'Peserta berhasil dihapus']);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Gagal: ' . $stmt->error]);
 }
-
-$admin = $result->fetch_assoc();
-
-if (!password_verify($password, $admin['password'])) {
-    echo json_encode(['success' => false, 'message' => 'Username atau password salah']);
-    exit;
-}
-
-echo json_encode(['success' => true, 'message' => 'Login berhasil', 'username' => $admin['username']]);
 
 $stmt->close();
 $conn->close();
