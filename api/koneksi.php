@@ -1,8 +1,8 @@
 <?php
-$host     = "localhost";
-$user     = "root";
-$password = "";
-$database = "olimpiade_fst";
+$host     = "sql210.infinityfree.com";
+$user     = "if0_42249247";
+$password = "wafiqasmad";
+$database = "if0_42249247_osn_fst_unpatti";
 
 $conn = mysqli_connect($host, $user, $password, $database);
 if (!$conn) {
