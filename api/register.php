@@ -42,4 +42,7 @@ if ($stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $stmt->error]);
 }
 $stmt->close();
-$conn->close();
+$conn->close(); 
+
+error_reporting(0);
+ini_set('display_errors', 0);
