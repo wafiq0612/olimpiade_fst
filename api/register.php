@@ -22,7 +22,6 @@ if ($nama === '' || $email === '' || $pass === '') {
     exit;
 }
 
-// Cek email sudah terdaftar
 $stmt = $conn->prepare("SELECT id FROM peserta WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
@@ -33,7 +32,7 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-$hashed = password_hash($pass, PASSWORD_DEFAULT);
+$hashed = md5($pass);
 $stmt = $conn->prepare("INSERT INTO peserta (nama, email, password, status) VALUES (?, ?, ?, 'belum')");
 $stmt->bind_param("sss", $nama, $email, $hashed);
 if ($stmt->execute()) {
@@ -42,7 +41,4 @@ if ($stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $stmt->error]);
 }
 $stmt->close();
-$conn->close(); 
-
-error_reporting(0);
-ini_set('display_errors', 0);
+$conn->close();
